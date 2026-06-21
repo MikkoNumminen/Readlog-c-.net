@@ -37,7 +37,10 @@ public class ReadLogAppFactory : WebApplicationFactory<Program>
             if (File.Exists(_dbPath))
             {
                 try { File.Delete(_dbPath); }
-                catch (IOException) { /* best effort cleanup */ }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // Best-effort cleanup; the OS reclaims %TEMP% regardless.
+                }
             }
         }
     }

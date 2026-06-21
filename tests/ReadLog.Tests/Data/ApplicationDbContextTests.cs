@@ -88,8 +88,10 @@ public class ApplicationDbContextTests
         Assert.Throws<DbUpdateException>(() => db.SaveChanges());
     }
 
-    [Fact]
-    public void Rating_outside_0_to_5_violates_the_check_constraint()
+    [Theory]
+    [InlineData(0)] // lower bound
+    [InlineData(5)] // upper bound
+    public void Rating_within_0_to_5_is_accepted(int rating)
     {
         using var sqlite = new SqliteTestDatabase();
         using var db = sqlite.CreateContext();
@@ -101,30 +103,32 @@ public class ApplicationDbContextTests
             UserId = user.Id,
             BookId = book.Id,
             FinishedAt = new DateOnly(2024, 6, 1),
-            Rating = 6,
-        });
-
-        Assert.Throws<DbUpdateException>(() => db.SaveChanges());
-    }
-
-    [Fact]
-    public void Rating_of_zero_is_allowed()
-    {
-        using var sqlite = new SqliteTestDatabase();
-        using var db = sqlite.CreateContext();
-        var user = SeedUser(db);
-        var book = SeedBook(db);
-
-        db.ReadEntries.Add(new ReadEntry
-        {
-            UserId = user.Id,
-            BookId = book.Id,
-            FinishedAt = new DateOnly(2024, 6, 1),
-            Rating = 0,
+            Rating = rating,
         });
 
         db.SaveChanges();
-        Assert.Equal(0, db.ReadEntries.Single().Rating);
+        Assert.Equal(rating, db.ReadEntries.Single().Rating);
+    }
+
+    [Theory]
+    [InlineData(-1)] // just below the lower bound
+    [InlineData(6)]  // just above the upper bound
+    public void Rating_outside_0_to_5_violates_the_check_constraint(int rating)
+    {
+        using var sqlite = new SqliteTestDatabase();
+        using var db = sqlite.CreateContext();
+        var user = SeedUser(db);
+        var book = SeedBook(db);
+
+        db.ReadEntries.Add(new ReadEntry
+        {
+            UserId = user.Id,
+            BookId = book.Id,
+            FinishedAt = new DateOnly(2024, 6, 1),
+            Rating = rating,
+        });
+
+        Assert.Throws<DbUpdateException>(() => db.SaveChanges());
     }
 
     [Fact]
@@ -178,6 +182,13 @@ public class ApplicationDbContextTests
             var book = db.Books.Single(b => b.Id == bookId);
             db.Books.Remove(book);
             Assert.Throws<DbUpdateException>(() => db.SaveChanges());
+        }
+
+        // The rejected delete must have left both the book and its entry intact.
+        using (var db = sqlite.CreateContext())
+        {
+            Assert.Single(db.Books);
+            Assert.Single(db.ReadEntries);
         }
     }
 
