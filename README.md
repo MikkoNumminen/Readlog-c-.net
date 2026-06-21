@@ -7,8 +7,8 @@ your personal library. There's also an account/stats page and a public
 "recently read" feed.
 
 This is an **idiomatic ASP.NET Core port** of the original
-[Next.js + Prisma + Postgres ReadLog](https://github.com/MikkoNumminen). The
-porting decisions (and *why* each one was made) are documented in
+[Next.js + Prisma + Postgres ReadLog](https://github.com/MikkoNumminen/ReadLog).
+The porting decisions (and *why* each one was made) are documented in
 [`PORTING-NOTES.md`](PORTING-NOTES.md); the original app's behaviour is mapped
 in [`docs/SOURCE-MAP.md`](docs/SOURCE-MAP.md).
 
@@ -38,8 +38,14 @@ dotnet build
 dotnet run --project src/ReadLog.Web
 ```
 
-The app listens on the URLs printed by Kestrel (https://localhost:7xxx and
-http://localhost:5xxx by default). Open the HTTPS URL in a browser.
+This starts the default `https` launch profile, listening on
+`https://localhost:7232` and `http://localhost:5239`. Open either URL Kestrel
+prints. The first time, trust the local dev certificate so the HTTPS URL loads
+without a warning:
+
+```bash
+dotnet dev-certs https --trust
+```
 
 ## Running the tests
 
