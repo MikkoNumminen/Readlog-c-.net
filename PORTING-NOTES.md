@@ -254,10 +254,103 @@ and the cache (hit, null-not-cached, per-(title,author) keying). 30 tests total.
 
 ---
 
+## PR4 — Authentication (ASP.NET Core Identity)
+
+### NextAuth → ASP.NET Core Identity
+
+The original uses **NextAuth v5** with a single **Google** provider and the Prisma
+adapter (database-backed sessions). The brief says: if there are users/login, use
+**ASP.NET Core Identity** — so that's the home for auth here.
+
+| NextAuth | ASP.NET Core Identity |
+| --- | --- |
+| `User` table | `AspNetUsers` (`ApplicationUser : IdentityUser`) |
+| `Account` (OAuth link/tokens) | `AspNetUserLogins` |
+| `Session` (DB session rows) | the **application auth cookie** (a signed ticket, not DB rows) |
+| `VerificationToken` | dropped (token providers exist if ever needed) |
+| `auth()` / `session.user.id` | `User.FindFirstValue(ClaimTypes.NameIdentifier)` + `[Authorize]` |
+| `signIn("google")` | `Challenge(props, GoogleDefaults.AuthenticationScheme)` |
+| `signOut()` | `SignInManager.SignOutAsync()` |
+| `pages.signIn:"/signin"` | cookie `LoginPath = "/signin"` |
+
+### Local accounts *and* Google (a deliberate departure)
+
+The original is Google-only. The port adds **local email/password accounts as the
+primary path, with Google as an optional external login**. Why:
+
+- It runs out-of-the-box with **no Google credentials** — register with an email
+  and you're in. Requiring a live Google OAuth client just to sign in would make
+  the app un-runnable for a reviewer.
+- Local accounts + external providers is exactly Identity's bread-and-butter, so
+  this is *more* idiomatic, not less.
+- Google still maps faithfully: it registers **only when configured**
+  (`Authentication:Google:ClientId`/`Secret` present), so the "Sign in with Google"
+  button appears when, and only when, credentials exist.
+
+### Why `AddIdentity` (not `AddIdentityCore`) and no scaffolded UI
+
+`AddIdentity<ApplicationUser, IdentityRole>()` wires all three Identity cookie
+schemes (application, external, two-factor) automatically — the external-login
+challenge/callback depends on the external cookie, and rolling that by hand with
+`AddIdentityCore` is more error-prone for no gain. Roles are unused but their tables
+are inert. The default Identity **UI** package (Bootstrap-themed Razor Class Library)
+is **not** used; instead the Login/Register/Logout/ExternalLogin pages are written
+by hand. That keeps them on the ReadLog theme and is more educational — they show
+`SignInManager.PasswordSignInAsync`, `UserManager.CreateAsync`, and the external
+challenge/callback flow explicitly.
+
+### The external-login flow
+
+`Login.OnPostExternalLogin` issues a `Challenge` to Google with a redirect to the
+`ExternalLogin` callback. The callback (`OnGetCallbackAsync`) signs the user in if
+the login is already linked. Otherwise: if **no** local account exists for the
+email, it provisions one from the provider's email/name claims, links the login
+(`AddLoginAsync`), and signs in; if a local account **already** exists, it
+**refuses to auto-link** and tells the user to sign in locally first. That refusal
+is an account-takeover guard — an email-string match alone is not proof of
+ownership, so silently attaching the provider to a pre-existing password account
+would let an attacker who pre-created an account hijack it.
+
+### Safety + config
+
+- **Open-redirect protection**: every post-auth redirect uses `LocalRedirect`,
+  which rejects non-local URLs — so a crafted `?returnUrl=https://evil` can't bounce
+  the user off-site.
+- **Brute-force throttling**: password sign-in uses `lockoutOnFailure: true` and
+  Identity lockout is configured (5 attempts → 5-minute lockout), so online password
+  guessing is bounded.
+- **Display name without a DB hit**: a custom `UserClaimsPrincipalFactory`
+  (`DisplayNameClaimsPrincipalFactory`) emits a `display_name` claim from
+  `ApplicationUser.Name` at sign-in; the navbar reads that claim (falling back to the
+  email) rather than querying the database on every render.
+- **No new migration**: the Identity tables were already created by PR2's
+  `InitialCreate` (the context was `IdentityDbContext` from the start), so PR4 is
+  pure behaviour — no schema change.
+- **Demo posture (and its limits)**: `RequireConfirmedAccount = false` (no email
+  sender is wired up) and a relaxed-but-sane password policy (≥8 chars). Two known
+  consequences of skipping email confirmation: registration can be used to *enumerate*
+  which emails have accounts (Identity's default duplicate-email message), and
+  unverified emails are accepted. Production would require email confirmation (with a
+  configured sender), which closes both.
+
+### Testing
+
+Ten tests drive the real pages over HTTP — extracting the **antiforgery token** from
+each rendered form and carrying cookies across requests — covering register-signs-in,
+the register→logout→login round-trip, wrong-password rejection, password-mismatch and
+duplicate-email rejection, the display-name greeting, and that a **GET** to `/signout`
+does *not* sign the user out (CSRF safety). The integration host swaps the
+`ApplicationDbContext` onto an isolated temp SQLite file via `ConfigureTestServices`
+(an earlier connection-string override silently didn't apply, so tests had been
+sharing — and accumulating state in — the real `readlog.db`; the swap makes every run
+hermetic). The Google path is wired but not integration-tested (that needs an OAuth
+double), and the `[Authorize]`→`/signin` challenge is exercised in PR6 against the
+first real protected page. 54 tests total.
+
+---
+
 ## Roadmap (documented as each PR lands)
 
-- **PR4 — Auth:** how NextAuth (Google + DB sessions) maps to ASP.NET Core Identity
-  + the application cookie + optional Google external login.
 - **PR5 — CRUD/business:** services + DI, DTOs + DataAnnotations validation,
   ownership checks (404-not-403), rating null-vs-0 semantics, `IOptions`, `ILogger`.
 - **PR6 — UI:** Razor Pages, PRG, antiforgery, ratings, the book-detail view.
