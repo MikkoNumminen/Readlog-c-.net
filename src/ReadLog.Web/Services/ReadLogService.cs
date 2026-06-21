@@ -188,11 +188,21 @@ public class ReadLogService : IReadLogService
         }
         catch (DbUpdateException)
         {
-            // A concurrent request created the same book first; use that row instead.
+            // We may have lost a race to create the shared book on the unique
+            // OpenLibraryId index. Detach our failed insert and look for the winner.
+            _db.Entry(book).State = EntityState.Detached;
+            var winner = await _db.Books
+                .FirstOrDefaultAsync(b => b.OpenLibraryId == request.OpenLibraryId, cancellationToken);
+            if (winner is null)
+            {
+                // No winning row exists, so this wasn't the race we tolerate
+                // (e.g. a locked database) — let the real failure surface.
+                throw;
+            }
+
             _logger.LogInformation("Lost a race creating book {OpenLibraryId}; reusing the existing row.",
                 request.OpenLibraryId);
-            _db.Entry(book).State = EntityState.Detached;
-            return await _db.Books.FirstAsync(b => b.OpenLibraryId == request.OpenLibraryId, cancellationToken);
+            return winner;
         }
     }
 }

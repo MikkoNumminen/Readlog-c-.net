@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using ReadLog.Web.Models;
+using ReadLog.Web.Validation;
 
 namespace ReadLog.Web.Dtos;
 
@@ -29,6 +30,8 @@ public class LogBookRequest
     public Format Format { get; set; } = Format.Book;
 
     [DataType(DataType.Date)]
+    [NotInFuture]
+    [Display(Name = "Finished on")]
     public DateOnly FinishedAt { get; set; }
 
     [Range(0, 5)]

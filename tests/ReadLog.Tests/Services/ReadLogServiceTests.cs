@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using ReadLog.Tests.Infrastructure;
@@ -358,6 +359,119 @@ public class ReadLogServiceTests
             // Newest first: the i=24 entry leads, the i=5 entry is last in the top-20.
             Assert.Equal(new DateTime(2024, 1, 1, 0, 24, 0, DateTimeKind.Utc), feed[0].CreatedAt);
             Assert.All(feed, r => Assert.Equal("Catalogue", r.Title));
+        }
+    }
+
+    [Fact]
+    public async Task GetMyBooksAsync_breaks_a_finished_date_tie_by_newest_created()
+    {
+        using var sqlite = new SqliteTestDatabase();
+        var sameDay = new DateOnly(2024, 5, 5);
+        string userId;
+        using (var db = sqlite.CreateContext())
+        {
+            userId = await SeedUserAsync(db, "me@example.com");
+            var earlier = new Book { Title = "Earlier-created", OpenLibraryId = "ol:1" };
+            var later = new Book { Title = "Later-created", OpenLibraryId = "ol:2" };
+            db.Books.AddRange(earlier, later);
+            await db.SaveChangesAsync();
+            db.ReadEntries.Add(new ReadEntry { UserId = userId, BookId = earlier.Id, FinishedAt = sameDay, CreatedAt = new DateTime(2024, 5, 5, 9, 0, 0, DateTimeKind.Utc) });
+            db.ReadEntries.Add(new ReadEntry { UserId = userId, BookId = later.Id, FinishedAt = sameDay, CreatedAt = new DateTime(2024, 5, 5, 10, 0, 0, DateTimeKind.Utc) });
+            await db.SaveChangesAsync();
+        }
+
+        using (var db = sqlite.CreateContext())
+        {
+            var books = await Service(db).GetMyBooksAsync(userId);
+            Assert.Collection(books,
+                b => Assert.Equal("Later-created", b.Book.Title),
+                b => Assert.Equal("Earlier-created", b.Book.Title));
+        }
+    }
+
+    [Fact]
+    public async Task LogBookAsync_throws_when_the_same_book_is_logged_on_the_same_date_twice()
+    {
+        using var sqlite = new SqliteTestDatabase();
+        using var db = sqlite.CreateContext();
+        var userId = await SeedUserAsync(db, "me@example.com");
+        var svc = Service(db);
+        var date = new DateOnly(2024, 1, 1);
+        await svc.LogBookAsync(userId, Request("ol:1", "Dune", date));
+
+        // The page is responsible for turning this into a friendly "already logged" message.
+        await Assert.ThrowsAsync<DbUpdateException>(() => svc.LogBookAsync(userId, Request("ol:1", "Dune", date)));
+    }
+
+    [Fact]
+    public async Task CheckIfReadAsync_finds_a_title_containing_a_literal_percent()
+    {
+        using var sqlite = new SqliteTestDatabase();
+        using var db = sqlite.CreateContext();
+        var userId = await SeedUserAsync(db, "me@example.com");
+        var svc = Service(db);
+        await svc.LogBookAsync(userId, Request("ol:1", "50% Off", new DateOnly(2024, 1, 1)));
+        await svc.LogBookAsync(userId, Request("ol:2", "Dune", new DateOnly(2024, 2, 1)));
+
+        var hit = Assert.Single(await svc.CheckIfReadAsync(userId, "50%"));
+        Assert.Equal("50% Off", hit.Book.Title);
+    }
+
+    [Fact]
+    public async Task CheckIfReadAsync_treats_underscore_literally()
+    {
+        using var sqlite = new SqliteTestDatabase();
+        using var db = sqlite.CreateContext();
+        var userId = await SeedUserAsync(db, "me@example.com");
+        var svc = Service(db);
+        await svc.LogBookAsync(userId, Request("ol:1", "A_B", new DateOnly(2024, 1, 1)));
+
+        Assert.Single(await svc.CheckIfReadAsync(userId, "A_B")); // literal underscore matches
+        Assert.Empty(await svc.CheckIfReadAsync(userId, "AxB"));  // underscore is not a wildcard
+    }
+
+    [Fact]
+    public async Task LogBookAsync_handles_a_concurrent_first_log_of_the_same_book()
+    {
+        // A file database gives the two tasks independent connections (real contention),
+        // which the SqliteTestDatabase's single shared in-memory connection cannot.
+        var dbPath = Path.Combine(Path.GetTempPath(), $"readlog-race-{Guid.NewGuid():N}.db");
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseSqlite($"Data Source={dbPath}")
+            .Options;
+        try
+        {
+            string user1, user2;
+            using (var db = new ApplicationDbContext(options))
+            {
+                db.Database.Migrate();
+                user1 = await SeedUserAsync(db, "u1@example.com");
+                user2 = await SeedUserAsync(db, "u2@example.com");
+            }
+
+            async Task Log(string userId)
+            {
+                using var db = new ApplicationDbContext(options);
+                await Service(db).LogBookAsync(userId, Request("ol:race", "Dune", new DateOnly(2024, 1, 1)));
+            }
+
+            await Task.WhenAll(Log(user1), Log(user2));
+
+            using (var db = new ApplicationDbContext(options))
+            {
+                // Exactly one shared book row, one entry per user, and no exception escaped.
+                Assert.Equal(1, await db.Books.CountAsync(b => b.OpenLibraryId == "ol:race"));
+                Assert.Equal(2, await db.ReadEntries.CountAsync());
+            }
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (File.Exists(dbPath))
+            {
+                try { File.Delete(dbPath); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+            }
         }
     }
 }

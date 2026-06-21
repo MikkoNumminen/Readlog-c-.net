@@ -392,11 +392,21 @@ straight from the query, so only the needed columns leave the database.
 - **Rating null vs 0**: `null` clears the rating; `0` is a real value — both round-trip.
 - **`checkIfRead` is case-insensitive**: `EF.Functions.Like` (SQLite `LIKE` is ASCII
   case-insensitive) with the user's `% _ \` escaped so a search term can't inject
-  wildcards; a blank query short-circuits to empty.
+  wildcards; a blank query short-circuits to empty. (The port also `Trim()`s the query
+  — a small, deliberate improvement; the original searched with surrounding whitespace
+  included.)
 - **Find-or-create the shared Book**: log reuses the catalogue row for an
   `OpenLibraryId` (the first logger's metadata wins) and creates the entry. The unique
-  index race is handled — on a `DbUpdateException` the duplicate is detached and the
-  winning row re-fetched.
+  index **race** is handled — on a `DbUpdateException` the failed insert is detached and
+  the winning row re-fetched; if there's *no* winning row the original exception is
+  re-thrown, so a non-race failure (e.g. a locked database) isn't masked.
+- **Duplicate finished-read**: logging the same book on the same `FinishedAt` twice
+  violates the unique `(UserId, BookId, FinishedAt)` index and **throws** out of the
+  service — faithful to the original's Prisma uniqueness error. The PR6 log page maps
+  it to a friendly "already logged" message rather than the service swallowing it.
+- **Defence-in-depth validation**: beyond the source's UI-only checks, the request DTOs
+  carry `Range(0,5)` on rating, `Range`s on page-count/year, and a custom
+  `[NotInFuture]` on `FinishedAt` (a book can't be finished in the future).
 - **Shared-title hazard preserved**: editing a title edits the shared `Book`, so it
   changes the title for every user's entry of that book — faithful to the original
   (a per-entry title override would localise it; deliberately out of scope).
