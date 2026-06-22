@@ -49,6 +49,12 @@ subscription). Run them in a shell with the [Azure CLI](https://learn.microsoft.
 installed; in a Claude Code session you can run an interactive login with
 `! az login`.
 
+> **Shell note.** These snippets use **bash** syntax (`$VAR`, `$(…)`, `<<` heredocs).
+> On Windows use **Git Bash** (this project's primary shell is PowerShell, where the
+> variable and quoting syntax differs). The OIDC step in particular passes JSON to
+> `az` via a file (`--parameters @file`) precisely because inline JSON mangles quotes
+> under PowerShell.
+
 Pick names once and reuse them:
 
 ```bash
@@ -121,12 +127,16 @@ az role assignment create --assignee-object-id "$OBJ" --assignee-principal-type 
   --role Contributor --scope "/subscriptions/$SUB/resourceGroups/$RG"
 
 # Federated credential — subject MUST match the workflow's environment exactly.
-az ad app federated-credential create --id "$APP_ID" --parameters '{
+# Written to a file and passed with @ so the JSON survives any shell intact.
+cat > federated-cred.json <<'JSON'
+{
   "name": "readlog-prod",
   "issuer": "https://token.actions.githubusercontent.com",
   "subject": "repo:MikkoNumminen/Readlog-c-.net:environment:production",
   "audiences": ["api://AzureADTokenExchange"]
-}'
+}
+JSON
+az ad app federated-credential create --id "$APP_ID" --parameters @federated-cred.json
 
 echo "AZURE_CLIENT_ID       = $APP_ID"
 echo "AZURE_TENANT_ID       = $(az account show --query tenantId -o tsv)"

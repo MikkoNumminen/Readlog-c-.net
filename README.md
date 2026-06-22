@@ -126,7 +126,7 @@ PORTING-NOTES.md             # every significant .NET decision, with rationale
 src/ReadLog.Web/             # the ASP.NET Core Razor Pages application
   Models/  Data/  Dtos/  Options/  Validation/  Auth/  Services/  Pages/
 tests/ReadLog.Tests/         # xUnit tests (unit + integration)
-.github/workflows/          # ci.yml (build + test) and deploy.yml (manual deploy)
+.github/workflows/           # ci.yml (build + test) and deploy.yml (manual deploy)
 ```
 
 ## Status
