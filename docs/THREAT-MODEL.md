@@ -63,6 +63,7 @@ authorization principal for everything at boundary 2.
 | Mass assignment / over-posting | Bind to explicit request DTOs with DataAnnotations, not entities (`Dtos/`) | None expected |
 | Out-of-range / future data | `[Range(0,5)]`, `[NotInFuture]`, page/year ranges, **plus a DB check constraint** on rating (`ApplicationDbContext`) | None expected |
 | SQL injection | EF Core parameterization; `LIKE` search escapes `% _ \` with `ESCAPE '\'` (`ReadLogService.CheckIfReadAsync`) | None expected |
+| Clickjacking / UI redress | No sensitive one-click GET action; every mutation requires an antiforgery POST | No `X-Frame-Options` / CSP `frame-ancestors` set yet — **demo** |
 
 ### R — Repudiation
 | Vector | Mitigation (where) | Residual |

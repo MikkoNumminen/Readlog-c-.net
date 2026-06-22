@@ -58,7 +58,7 @@ email-string match is not proof of ownership, so silent linking is rejected.
   check constraint.
 
 ### Transport
-- HTTPS redirection + HSTS (outside Development).
+- HTTPS redirection (all environments) + HSTS (outside Development).
 - `UseForwardedHeaders` is the first middleware so that, behind a TLS-terminating
   proxy (Azure App Service), the original `https` scheme drives redirects and cookie
   flags. Known-network/proxy lists are intentionally cleared because the platform is
@@ -68,7 +68,8 @@ email-string match is not proof of ownership, so silent linking is rejected.
 ### Secrets
 Nothing secret is committed. The Google API key and OAuth client id/secret come from
 **user-secrets** (development) or environment variables / app settings (production).
-`appsettings.json` carries only a default SQLite connection string.
+`appsettings.json` carries only non-secret defaults — the SQLite connection string,
+plus empty placeholders for the Google API key and OAuth client id/secret.
 
 ## Known limitations (demo posture)
 
