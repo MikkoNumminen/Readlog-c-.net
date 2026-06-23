@@ -37,8 +37,8 @@ manually:
    created/upgraded on first boot.
 
 The image name is hard-coded lowercase (`ghcr.io/mikkonumminen/readlog`) rather than
-derived from `${{ github.repository }}` — the repo slug `Readlog-c-.net` contains
-characters that aren't a valid container reference.
+derived from `${{ github.repository }}`, so it stays stable across repo renames and is
+always a valid lowercase container reference (the earlier `Readlog-c-.net` slug wasn't).
 
 ---
 
@@ -132,7 +132,7 @@ cat > federated-cred.json <<'JSON'
 {
   "name": "readlog-prod",
   "issuer": "https://token.actions.githubusercontent.com",
-  "subject": "repo:MikkoNumminen/Readlog-c-.net:environment:production",
+  "subject": "repo:MikkoNumminen/readlog-dotnet:environment:production",
   "audiences": ["api://AzureADTokenExchange"]
 }
 JSON

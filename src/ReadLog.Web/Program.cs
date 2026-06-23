@@ -92,7 +92,7 @@ builder.Services.AddHttpClient<IOpenLibraryClient, OpenLibraryClient>(client =>
     client.BaseAddress = new Uri("https://openlibrary.org/");
     client.Timeout = TimeSpan.FromSeconds(10);
     client.DefaultRequestHeaders.UserAgent.ParseAdd(
-        "ReadLog/1.0 (+https://github.com/MikkoNumminen/Readlog-c-.net)");
+        "ReadLog/1.0 (+https://github.com/MikkoNumminen/readlog-dotnet)");
 });
 builder.Services.AddHttpClient<IGoogleBooksClient, GoogleBooksClient>(client =>
 {

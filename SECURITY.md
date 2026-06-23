@@ -8,7 +8,7 @@ analysis lives in **[docs/THREAT-MODEL.md](docs/THREAT-MODEL.md)**.
 ## Reporting a vulnerability
 
 Report privately — please **do not open a public issue** for a security problem.
-Use a [GitHub private security advisory](https://github.com/MikkoNumminen/Readlog-c-.net/security/advisories/new)
+Use a [GitHub private security advisory](https://github.com/MikkoNumminen/readlog-dotnet/security/advisories/new)
 on the repository so the maintainer can triage it before disclosure.
 
 ## Scope
