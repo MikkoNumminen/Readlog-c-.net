@@ -192,17 +192,18 @@ Setup + caveats live in **[docs/DEPLOY.md](docs/DEPLOY.md)**.
 
 ## Status / deploy
 
-Port is **feature-complete and merged to `master`** (7 PRs, 95 tests, 0 warnings,
-CI green). The **only remaining task is deployment** to **Azure App Service F1
-Linux** — and the act of deploying is **not yet authorized**. The app is deploy-ready:
-multi-stage `Dockerfile` (`aspnet:8.0`, non-root, port **8080**), SQLite at
-`/home/data`, migrations on startup, `UseForwardedHeaders` first in the pipeline. A
-manual, gated deploy pipeline now exists (`deploy.yml` + **[docs/DEPLOY.md](docs/DEPLOY.md)**);
-the one-time Azure bootstrap and the *Run workflow* click are still owner actions. To
-deploy the container, set `WEBSITES_PORT=8080`, `WEBSITES_ENABLE_APP_SERVICE_STORAGE=true`,
-`ConnectionStrings__Default=Data Source=/home/data/readlog.db`, enable **HTTPS
-Only**. (The Docker image build hasn't been run in-environment — no daemon — but the
-`dotnet publish` it depends on is verified.)
+Port is **feature-complete and merged to `master`** (95 tests, 0 warnings, CI green),
+and **deployed live** (with the owner's go-ahead) to **Azure App Service F1 Linux**:
+**<https://readlog-a2feef.azurewebsites.net/>**. It runs the container from
+`ghcr.io/mikkonumminen/readlog` (public image), built and shipped by the manual,
+reviewer-gated `deploy.yml` (OIDC, no stored creds); full runbook in
+**[docs/DEPLOY.md](docs/DEPLOY.md)**. App settings in place: `WEBSITES_PORT=8080`,
+`WEBSITES_ENABLE_APP_SERVICE_STORAGE=true`,
+`ConnectionStrings__Default=Data Source=/home/data/readlog.db`, **HTTPS Only**, plus
+`Authentication__Google__*` (Sign in with Google is enabled). Hosting is **$0** (F1 is
+always-free; a `readlog-zero-guard` budget alerts on any spend). Known caveat: SQLite on
+the App Service network share is officially unsupported (fine for this single-instance
+demo; not production-grade — a managed DB is the upgrade path).
 
 ## The doc set
 

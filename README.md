@@ -6,6 +6,10 @@ a finished-on date and a 0–5 star rating, then browse, search, edit and delete
 your personal library. There's also an account/stats page and a public
 "recently read" feed.
 
+**▶ Live (this .NET port):** <https://readlog-a2feef.azurewebsites.net/> — deployed
+**free** on Azure App Service (F1 Linux) via GitHub Actions; runbook in
+[`docs/DEPLOY.md`](docs/DEPLOY.md).
+
 This is an **idiomatic ASP.NET Core port** of the original
 [Next.js + Prisma + Postgres ReadLog](https://github.com/MikkoNumminen/ReadLog),
 which runs live at **<https://read-log-pi.vercel.app/>**. The porting decisions
@@ -92,6 +96,9 @@ created on first run. The volume keeps it across container restarts.
 
 ### Azure App Service (F1 Linux)
 
+> **Live now:** <https://readlog-a2feef.azurewebsites.net/> — running on the free F1 tier
+> (idles after ~20 min, so the first request after a while is a slow cold start).
+
 A manual **GitHub Actions deploy pipeline** ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml))
 builds the image, pushes it to GitHub Container Registry, and deploys the container
 to App Service via OIDC. The full runbook — one-time Azure bootstrap, OIDC setup, and
@@ -111,8 +118,9 @@ Enable **HTTPS Only** on the App Service; the app honours `X-Forwarded-Proto` vi
 forwarded-headers middleware so auth cookies and links use the right scheme behind the
 platform's TLS-terminating proxy.
 
-> Note: `dotnet publish` and a Production run of the published app are verified locally;
-> the Docker image build itself was not run in this environment (no Docker daemon available).
+> Note: the container image is built by GitHub Actions and is **running live on Azure**
+> (link above); EF Core migrations apply on startup, creating the SQLite database on the
+> persistent `/home/data` share on first run.
 
 ## Project structure
 
