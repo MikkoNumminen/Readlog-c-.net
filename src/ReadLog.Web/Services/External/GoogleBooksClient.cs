@@ -37,6 +37,10 @@ public class GoogleBooksClient : IGoogleBooksClient
         _apiKey = options.Value.ApiKey;
     }
 
+    // Per-provider fetch count; kept equal across providers so the Open-Library-first
+    // merge/de-dup in BookSearchService stays balanced.
+    private const int SearchLimit = 15;
+
     public async Task<IReadOnlyList<BookSearchResult>> SearchAsync(
         string query, CancellationToken cancellationToken = default)
     {
@@ -45,7 +49,7 @@ public class GoogleBooksClient : IGoogleBooksClient
             return [];
         }
 
-        var url = $"volumes?q={Uri.EscapeDataString(query)}&maxResults=15&key={Uri.EscapeDataString(_apiKey)}";
+        var url = $"volumes?q={Uri.EscapeDataString(query)}&maxResults={SearchLimit}&key={Uri.EscapeDataString(_apiKey)}";
 
         using var response = await _http.GetAsync(url, cancellationToken);
         if (!response.IsSuccessStatusCode)

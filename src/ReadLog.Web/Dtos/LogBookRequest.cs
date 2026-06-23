@@ -9,6 +9,7 @@ public class LogBookRequest
 {
     /// <summary>Provider key: an Open Library work id, a <c>google:…</c>, or a <c>manual:…</c>.</summary>
     [Required]
+    [StringLength(200)]
     public string OpenLibraryId { get; set; } = string.Empty;
 
     [Required]
