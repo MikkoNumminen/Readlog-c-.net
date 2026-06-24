@@ -59,6 +59,15 @@
                     </a>
                 }
             </div>
+            @if (!string.IsNullOrWhiteSpace(Model.Title))
+            {
+                <p class="text-muted small mt-3 mb-1">Not the book you're looking for?</p>
+                <a class="btn btn-outline-secondary btn-sm"
+                   asp-page="/Log" asp-route-olid="@Model.ManualOpenLibraryId"
+                   asp-route-selTitle="@Model.Title?.Trim()" asp-route-selAuthor="@Model.Author?.Trim()">
+                    Add &quot;@Model.Title.Trim()&quot; manually
+                </a>
+            }
         }
     }
     else
