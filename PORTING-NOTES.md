@@ -64,7 +64,7 @@ at seams worth testing/mocking", not "abstract everything".
 
 The original uses MUI 7 (a React component library) with a brown palette
 (`#5D4E37` / `#8B6914`, bg `#FAFAF5`). The idiomatic ASP.NET Core equivalent is
-the template's **Bootstrap 5** (grid, cards, modals, badges, form + validation
+the template's **Bootstrap 5** (grid, cards, badges, list-group, form + validation
 styling) re-themed with CSS custom properties to the same palette
 (`wwwroot/css/site.css`). This keeps us on the standard ASP.NET Core front-end —
 including jQuery unobtrusive validation, which the DataAnnotations story plugs
@@ -556,5 +556,5 @@ Every chunk has landed: scaffold → data layer → integrations → auth → CR
 Docker/deploy. The result is an idiomatic ASP.NET Core application — DI throughout,
 async I/O, EF Core migrations, DTOs + DataAnnotations, `IOptions`, `ILogger`,
 nullable-as-error — that reproduces every ReadLog feature without transliterating the
-TypeScript. The full test suite is **95 tests** (the "86 total" above was the running
-count at the end of PR6; PR7 brought it to 95).
+TypeScript. The full xUnit suite is green (run `dotnet test` for the current count; the
+"86 total" noted above was the running count at the end of PR6, which PR7 then grew).
