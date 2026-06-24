@@ -11,8 +11,8 @@
     --rl-text: #2e2a23;
 
     /* Re-point Bootstrap's primary onto the ReadLog espresso brown.
-       (Link colours are themed by the explicit `a {}` rules below — the bundled
-       Bootstrap 5.1 hard-codes anchor colour and has no --bs-link-color* vars.) */
+       (Link colours are themed by the explicit `a {}` rules below so anchors read as the
+       ReadLog espresso brown rather than Bootstrap's default link blue.) */
     --bs-primary: var(--rl-primary);
     --bs-primary-rgb: 93, 78, 55;
 }
