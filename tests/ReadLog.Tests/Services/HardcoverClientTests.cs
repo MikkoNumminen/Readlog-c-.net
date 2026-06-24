@@ -102,8 +102,8 @@ public class HardcoverClientTests
     [Fact]
     public async Task SearchAsync_posts_graphql_to_the_endpoint_with_a_bearer_token_and_the_query_variable()
     {
-        string? body = null;
-        string? auth = null;
+        string body = "";
+        string auth = "";
         var handler = new StubHttpMessageHandler(req =>
         {
             auth = req.Headers.GetValues("Authorization").Single();
@@ -128,7 +128,7 @@ public class HardcoverClientTests
     [Fact]
     public async Task SearchAsync_does_not_double_prefix_a_token_that_already_has_bearer()
     {
-        string? auth = null;
+        string auth = "";
         var handler = new StubHttpMessageHandler(req =>
         {
             auth = req.Headers.GetValues("Authorization").Single();
