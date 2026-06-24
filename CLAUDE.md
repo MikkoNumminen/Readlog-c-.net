@@ -110,9 +110,10 @@ Behaviour that is load-bearing and easy to regress. Most are enforced in
   find-or-creates it (first logger's metadata wins). The create tolerates a unique-
   index **race**: on `DbUpdateException`, detach and re-fetch the winner; if there's
   no winner, **re-throw** (don't mask a locked-DB failure).
-- **Shared-title hazard (intentional):** editing an entry's title edits the shared
-  `Book`, changing it for *every* user's entry of that book — faithful to the
-  original. A per-entry override would localise it; deliberately out of scope.
+- **Shared catalogue `Book.Title` is read-only from the entry edit path** (a deliberate
+  divergence from the original, where editing an entry's title mutated the shared `Book`
+  for *every* user of that book). The edit path changes only per-user fields
+  (`Format`/`FinishedAt`/`Rating`); the catalogue title is set once at log time.
 - **Rating: `null` = unrated, `0` = a real rating** — both round-trip. A DB check
   constraint enforces `Rating IS NULL OR 0..5`.
 - **Delete removes the `ReadEntry`, never the shared `Book`.** FKs: deleting a user
