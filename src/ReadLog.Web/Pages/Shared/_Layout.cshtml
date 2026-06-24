@@ -1,5 +1,8 @@
 @{
-    var currentPage = ViewContext.RouteData.Values["page"] as string;
+    var currentPage = ViewContext.RouteData.Values["page"] as string ?? "";
+    // Highlight the nav item for the current page AND its sub-pages (e.g. /Library/Edit -> Library).
+    bool IsSection(string root) =>
+        currentPage == root || currentPage.StartsWith(root + "/", StringComparison.OrdinalIgnoreCase);
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -25,13 +28,13 @@
                 <div id="navbarSupportedContent" class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav me-auto">
                         <li class="nav-item">
-                            <a class="nav-link @(currentPage == "/Index" ? "active" : null)" aria-current="@(currentPage == "/Index" ? "page" : null)" asp-area="" asp-page="/Index">Home</a>
+                            <a class="nav-link@(IsSection("/Index") ? " active" : "")" aria-current="@(IsSection("/Index") ? "page" : null)" asp-area="" asp-page="/Index">Home</a>
                         </li>
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-                            <li class="nav-item"><a class="nav-link @(currentPage == "/Library" ? "active" : null)" aria-current="@(currentPage == "/Library" ? "page" : null)" asp-page="/Library">Library</a></li>
-                            <li class="nav-item"><a class="nav-link @(currentPage == "/Log" ? "active" : null)" aria-current="@(currentPage == "/Log" ? "page" : null)" asp-page="/Log">Log a book</a></li>
-                            <li class="nav-item"><a class="nav-link @(currentPage == "/Account" ? "active" : null)" aria-current="@(currentPage == "/Account" ? "page" : null)" asp-page="/Account">Account</a></li>
+                            <li class="nav-item"><a class="nav-link@(IsSection("/Library") ? " active" : "")" aria-current="@(IsSection("/Library") ? "page" : null)" asp-page="/Library">Library</a></li>
+                            <li class="nav-item"><a class="nav-link@(IsSection("/Log") ? " active" : "")" aria-current="@(IsSection("/Log") ? "page" : null)" asp-page="/Log">Log a book</a></li>
+                            <li class="nav-item"><a class="nav-link@(IsSection("/Account") ? " active" : "")" aria-current="@(IsSection("/Account") ? "page" : null)" asp-page="/Account">Account</a></li>
                         }
                     </ul>
                     <partial name="_LoginPartial" />
