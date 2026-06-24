@@ -64,10 +64,10 @@ public class LogModel : PageModel
         {
             Searched = true;
             Results = await _search.SearchAsync(query, cancellationToken);
-            if (Results.Count == 0)
-            {
-                ManualOpenLibraryId = $"manual:{Guid.NewGuid():N}";
-            }
+            // Always offer a manual-add fallback after a search: the providers return
+            // irrelevant-but-nonzero hits for niche / Audible-only titles, which would
+            // otherwise hide the option behind a non-empty result list.
+            ManualOpenLibraryId = $"manual:{Guid.NewGuid():N}";
         }
     }
 
