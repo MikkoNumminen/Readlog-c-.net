@@ -148,7 +148,7 @@ public class ReadLogServiceTests
     }
 
     [Fact]
-    public async Task UpdateReadEntryAsync_updates_the_entry_and_the_book_title()
+    public async Task UpdateReadEntryAsync_updates_per_user_fields_but_not_the_shared_book_title()
     {
         using var sqlite = new SqliteTestDatabase();
         string userId;

@@ -358,7 +358,7 @@ ReadLog uses Next.js `unstable_cache` (read-side memoization keyed by `keyParts`
 
 ### Carry-over edge cases & hazards (must survive the port)
 - **Ownership returns "Not found" (404), not "Forbidden" (403)** — deliberate existence-hiding; replicate with a single guarded query `FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId)` → `NotFound()`.
-- **Shared-Book title mutation:** `updateReadEntry` with a title edits the shared `Book.title`, changing it for every user's entry of that book; `upsert update:{}` means the first logger's metadata wins. Decide keep-shared vs per-entry denormalization.
+- **Shared-Book title mutation:** in the original, `updateReadEntry` with a title edits the shared `Book.title`, changing it for every user's entry of that book; `upsert update:{}` means the first logger's metadata wins. **Port decision:** the edit path makes the title read-only (no shared-`Book` write) — a deliberate divergence; the catalogue title is set once at log time.
 - **`finishedAt` is a `YYYY-MM-DD` string** parsed by JS `new Date()` as **UTC midnight**; store as UTC `DateTime`/`DateOnly` and honor `@@unique([userId, bookId, finishedAt])`.
 - **Rating semantics:** `null` clears, `0` is valid (`!== undefined` guard) — preserve in the update path.
 - **Account stats split:** cache only the aggregate; read name/email/image live from the `ClaimsPrincipal`.

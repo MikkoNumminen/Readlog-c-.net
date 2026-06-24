@@ -407,9 +407,10 @@ straight from the query, so only the needed columns leave the database.
 - **Defence-in-depth validation**: beyond the source's UI-only checks, the request DTOs
   carry `Range(0,5)` on rating, `Range`s on page-count/year, and a custom
   `[NotInFuture]` on `FinishedAt` (a book can't be finished in the future).
-- **Shared-title hazard preserved**: editing a title edits the shared `Book`, so it
-  changes the title for every user's entry of that book — faithful to the original
-  (a per-entry title override would localise it; deliberately out of scope).
+- **Shared-title hazard removed (deliberate divergence)**: the original let an entry
+  edit mutate the shared `Book` title (changing it for every user of that book). The port
+  makes the title **read-only on the edit path** — only per-user fields
+  (`Format`/`FinishedAt`/`Rating`) change; the catalogue title is set once at log time.
 - **Account stats** return only the aggregate (count + per-format `GroupBy`); the page
   merges the live profile (name/email) from the `ClaimsPrincipal`.
 - **Public feed** projects to `PublicReadDto`, which carries **no user fields**.
