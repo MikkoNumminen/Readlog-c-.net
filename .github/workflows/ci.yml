@@ -23,10 +23,16 @@ jobs:
         run: dotnet restore
 
       - name: Check for vulnerable packages
+        shell: bash
         run: |
-          dotnet list package --vulnerable --include-transitive 2>&1 | tee vuln.log
+          set -euo pipefail
+          # Fail-CLOSED: pipefail makes a scanner failure (network / restore / advisory-DB
+          # fetch) fail the step too, not just a real advisory. Policy: block on High/Critical;
+          # Moderate/Low are printed but non-blocking. Queries the live NuGet advisory DB, so a
+          # newly-published advisory can flag an otherwise-unchanged pin.
+          dotnet list package --vulnerable --include-transitive | tee vuln.log
           if grep -qiE '\b(critical|high)\b' vuln.log; then
-            echo "::error::Critical/High vulnerable package(s) detected"; exit 1
+            echo "::error::High/Critical vulnerable package(s) detected"; exit 1
           fi
 
       - name: Build
