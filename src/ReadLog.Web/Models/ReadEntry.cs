@@ -19,7 +19,5 @@ public class ReadEntry : ICreatedAt
     /// <summary>Optional 0–5 star rating. Null means "no rating"; 0 is a real value.</summary>
     public int? Rating { get; set; }
 
-    public string? Notes { get; set; }
-
     public DateTime CreatedAt { get; set; }
 }
