@@ -103,7 +103,7 @@ authorization principal for everything at boundary 2.
   host (client-side fetch — a privacy/tracking vector, not server SSRF). Accepted.
 - **Open redirect:** `LocalRedirect` rejects a non-local `ReturnUrl`.
 - **SSRF:** outbound calls go only to fixed `BaseAddress`es (openlibrary.org,
-  googleapis.com); user input never chooses the host. Not exposed.
+  googleapis.com, api.hardcover.app); user input never chooses the host. Not exposed.
 
 ## Production hardening checklist
 
