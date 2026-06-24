@@ -204,7 +204,10 @@ reviewer-gated `deploy.yml` (OIDC, no stored creds); full runbook in
 **[docs/DEPLOY.md](docs/DEPLOY.md)**. App settings in place: `WEBSITES_PORT=8080`,
 `WEBSITES_ENABLE_APP_SERVICE_STORAGE=true`,
 `ConnectionStrings__Default=Data Source=/home/data/readlog.db`, **HTTPS Only**, plus
-`Authentication__Google__*` (Sign in with Google is enabled). Hosting is **$0** (F1 is
+`Authentication__Google__*` (Sign in with Google) and `GoogleBooks__ApiKey` (Google Books
+search/details enabled). The live SQLite holds the **real reading history imported from the
+original's Neon Postgres** (see **[docs/DATA-MIGRATION.md](docs/DATA-MIGRATION.md)**;
+non-owner readers anonymized). Hosting is **$0** (F1 is
 always-free; a `readlog-zero-guard` budget alerts on any spend). Known caveat: SQLite on
 the App Service network share is officially unsupported (fine for this single-instance
 demo; not production-grade — a managed DB is the upgrade path).
@@ -218,4 +221,7 @@ demo; not production-grade — a managed DB is the upgrade path).
   mapped to its C# counterpart. Read before touching feature parity.
 - **[docs/DEPLOY.md](docs/DEPLOY.md)** — the deployment runbook: CI/CD pipeline,
   one-time Azure bootstrap, OIDC setup, free-tier caveats. Read before deploying.
+- **[docs/DATA-MIGRATION.md](docs/DATA-MIGRATION.md)** — the one-off Neon Postgres →
+  Azure SQLite data migration (ETL, identity mapping, safe file-swap). Read before
+  re-importing or touching the live database.
 - **[README.md](README.md)** — human-facing setup, configuration, deployment.
