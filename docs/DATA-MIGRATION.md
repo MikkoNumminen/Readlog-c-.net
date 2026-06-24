@@ -10,7 +10,7 @@ port that a schema diagram doesn't show.
 > real personal emails. The Neon URL, the Google Books key, and the short-lived Azure
 > token were handled only outside the repository (an ephemeral Azure Cloud Shell and an
 > out-of-tree scratch directory) and were never committed. Third-party reader identities
-> were anonymized (see [Identity](#3-identity--the-load-bearing-decision)).
+> were anonymized (see [Identity](#4-identity--the-load-bearing-decision)).
 
 ## Why this was non-trivial
 
@@ -43,28 +43,33 @@ and is strictly **read-only** on the Postgres side.
 ### 1. cuid string PKs → int autoincrement
 `Book`/`ReadEntry` use `int` identity keys; the source uses `cuid()` strings. The source
 ids can't be inserted, so:
-- Books are **find-or-created keyed by `OpenLibraryId`** (unique in both schemas); SQLite
-  assigns the new `int` id, and an in-run map (`old key → new id`) lets each entry's
-  `bookId` be rewritten to the new int FK.
+- Books are **find-or-created keyed by `OpenLibraryId`** (unique in both schemas), falling
+  back to the source cuid as an *in-run-only* key when `OpenLibraryId` is null (none of the
+  live rows needed the fallback). SQLite assigns the new `int` id, and an in-run map
+  (`old key → new id`) lets each entry's `bookId` be rewritten to the new int FK.
 - `ReadEntry` ids are simply discarded (nothing references them).
 
 ### 2. Postgres enum → C# enum name
 The column stores the **enum name** the EF `HasConversion<string>()` expects, so
 `BOOK / AUDIOBOOK / EBOOK` are translated to `Book / Audiobook / Ebook` (a literal copy
-would fail to round-trip).
+would fail to round-trip); an absent or unrecognized value defaults to `Book`.
 
 ### 3. `DateTime` → `DateOnly`, and the unique index
-`finishedAt` (a Postgres timestamp) becomes a `DateOnly` (the **UTC date**, matching the
-original's "parsed as UTC-midnight" semantics). Because the target has a unique index on
+`finishedAt` (a Postgres timestamp) becomes a `DateOnly` — the **date part** of the source
+timestamp (`strftime('%Y-%m-%d')`, no timezone conversion; the live rows are stored at
+midnight, so the day is unambiguous). Because the target has a unique index on
 `(UserId, BookId, FinishedAt)`, rows are **de-duplicated on the post-conversion triple**
-before insert so a same-day collision can't abort the load. `CreatedAt` is carried over
-from the source verbatim (preserving public-feed ordering), not stamped at import time.
+before insert so a same-day collision can't abort the load. `CreatedAt` is **preserved from
+the source** — UTC-normalized and reformatted to EF Core's SQLite TEXT datetime layout; the
+instant is kept, so public-feed ordering stays faithful — rather than stamped at import time
+(a null source `CreatedAt` would fall back to import time, but no live row needed it).
 
 ### 4. Identity — the load-bearing decision
 The source users are **OAuth-only (no passwords)**. Mapping:
 - The **owner** is matched to the existing `AspNetUsers` row **by email**, so the imported
-  reads attach to the real account and stay editable. That account's **Google login link
-  is preserved**, so signing in with Google still resolves to the same user.
+  reads attach to the real account and stay editable. Because the import attaches to that
+  existing row and **never touches `AspNetUserLogins`**, the account's Google login link is
+  left intact — signing in with Google still resolves to the same user.
 - Every **other reader is anonymized**: a placeholder account (`reader-1@imported.local`,
   `reader-2@imported.local`) with no password and no real email. Their reads become
   **feed-only** content. This is a deliberate privacy choice — and it's lossless to the
@@ -103,7 +108,8 @@ reliable file locking — so the file is replaced **offline**, with a backup tak
 
 - **9 reads, 9 books, 3 users** (1 real owner + 2 anonymized readers).
 - The owner's **5** reads attach to their real account (editable in Library); the other
-  **4** are anonymized feed entries. All covers, ratings, formats, and dates carried over.
+  **4** are anonymized feed entries. All covers, ratings, formats (7 audiobook, 2 book),
+  and dates carried over.
 - **Google Books enrichment is live** (merged search results + rich detail pages).
 - Startup `Database.Migrate()` is a no-op — the uploaded DB is already at head
   (`InitialCreate` + `RemoveReadEntryNotes`).
@@ -111,8 +117,9 @@ reliable file locking — so the file is replaced **offline**, with a backup tak
 ## Rollback
 
 Re-upload the pre-swap backup (`readlog.db` downloaded in step 3) via Kudu VFS and
-restart. The import is also safely repeatable: books find-or-create by `OpenLibraryId`
-and entries de-dup on `(UserId, BookId, FinishedAt)`, so a re-run doesn't double-insert.
+restart. The import is also largely repeatable: books with an `OpenLibraryId` find-or-create
+on it and entries de-dup on `(UserId, BookId, FinishedAt)`, so a re-run doesn't double-insert
+them (a book with a *null* `OpenLibraryId` would re-insert, since its cuid key is in-run only).
 
 ## Caveats / production upgrade path
 
