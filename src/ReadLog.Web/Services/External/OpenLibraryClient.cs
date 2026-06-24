@@ -27,6 +27,10 @@ public class OpenLibraryClient : IOpenLibraryClient
         PropertyNameCaseInsensitive = true,
     };
 
+    // Per-provider fetch count; kept equal across providers so the Open-Library-first
+    // merge/de-dup in BookSearchService stays balanced.
+    private const int SearchLimit = 15;
+
     private readonly HttpClient _http;
 
     public OpenLibraryClient(HttpClient http)
@@ -42,7 +46,7 @@ public class OpenLibraryClient : IOpenLibraryClient
             return [];
         }
 
-        var url = $"search.json?q={Uri.EscapeDataString(query)}&limit=15&fields={Fields}";
+        var url = $"search.json?q={Uri.EscapeDataString(query)}&limit={SearchLimit}&fields={Fields}";
 
         using var response = await _http.GetAsync(url, cancellationToken);
         if (!response.IsSuccessStatusCode)

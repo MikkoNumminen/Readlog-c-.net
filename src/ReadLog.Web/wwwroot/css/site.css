@@ -101,21 +101,6 @@ a:hover {
     border-top: 1px solid rgba(93, 78, 55, 0.15);
 }
 
-/* Simple hero used by the landing page. */
-.rl-hero {
-    text-align: center;
-    padding: 3rem 1rem;
-}
-
-.rl-hero h1 {
-    color: var(--rl-primary);
-    font-weight: 700;
-}
-
-.rl-hero .lead {
-    color: var(--rl-secondary);
-}
-
 /* --- Layout widths ----------------------------------------------------- */
 .rl-narrow {
     max-width: 560px;

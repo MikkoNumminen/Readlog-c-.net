@@ -60,10 +60,10 @@
             <div class="rl-description">@Html.Raw(Model.SafeDescriptionHtml)</div>
         }
 
-        @if (!string.IsNullOrEmpty(d.InfoLink))
+        @if (Model.SafeInfoLink is not null)
         {
             <p class="mt-3">
-                <a href="@d.InfoLink" target="_blank" rel="noopener noreferrer">More on Google Books &#8599;</a>
+                <a href="@Model.SafeInfoLink" target="_blank" rel="noopener noreferrer">More on Google Books &#8599;</a>
             </p>
         }
     }

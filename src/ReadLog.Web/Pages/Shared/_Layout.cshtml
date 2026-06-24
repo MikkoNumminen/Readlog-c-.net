@@ -1,14 +1,22 @@
+@{
+    var currentPage = ViewContext.RouteData.Values["page"] as string ?? "";
+    // Highlight the nav item for the current page AND its sub-pages (e.g. /Library/Edit -> Library).
+    bool IsSection(string root) =>
+        currentPage == root || currentPage.StartsWith(root + "/", StringComparison.OrdinalIgnoreCase);
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] · ReadLog</title>
+    <link rel="icon" href="~/favicon.ico" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/ReadLog.Web.styles.css" asp-append-version="true" />
 </head>
 <body>
+    <a class="visually-hidden-focusable" href="#main">Skip to content</a>
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm rl-navbar mb-3">
             <div class="container">
@@ -20,13 +28,13 @@
                 <div id="navbarSupportedContent" class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav me-auto">
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-page="/Index">Home</a>
+                            <a class="nav-link@(IsSection("/Index") ? " active" : "")" aria-current="@(IsSection("/Index") ? "page" : null)" asp-area="" asp-page="/Index">Home</a>
                         </li>
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-                            <li class="nav-item"><a class="nav-link" asp-page="/Library">Library</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-page="/Log">Log a book</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-page="/Account">Account</a></li>
+                            <li class="nav-item"><a class="nav-link@(IsSection("/Library") ? " active" : "")" aria-current="@(IsSection("/Library") ? "page" : null)" asp-page="/Library">Library</a></li>
+                            <li class="nav-item"><a class="nav-link@(IsSection("/Log") ? " active" : "")" aria-current="@(IsSection("/Log") ? "page" : null)" asp-page="/Log">Log a book</a></li>
+                            <li class="nav-item"><a class="nav-link@(IsSection("/Account") ? " active" : "")" aria-current="@(IsSection("/Account") ? "page" : null)" asp-page="/Account">Account</a></li>
                         }
                     </ul>
                     <partial name="_LoginPartial" />
@@ -35,7 +43,7 @@
         </nav>
     </header>
     <div class="container rl-main">
-        <main class="pb-3">
+        <main id="main" class="pb-3">
             @RenderBody()
         </main>
     </div>

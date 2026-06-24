@@ -14,6 +14,7 @@
                placeholder="Search your library…" />
     </form>
 
+    <div role="status" aria-live="polite">
     @if (Model.Searched)
     {
         @if (Model.SearchResults.Count == 0)
@@ -49,6 +50,7 @@
             </div>
         }
     }
+    </div>
 
     @if (Model.Entries.Count == 0)
     {
